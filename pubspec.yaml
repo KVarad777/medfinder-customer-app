@@ -8,39 +8,35 @@ environment:
   sdk: ^3.9.2
 
 dependencies:
+  flutter:
+    sdk: flutter
   http: ^1.2.0
   geolocator: ^10.1.0
   permission_handler: ^11.3.0
   shared_preferences: ^2.2.2
   latlong2: ^0.9.0
-  flutter:
-    sdk: flutter
   mobile_scanner: ^5.0.0
-
-  # iOS-style icons
   cupertino_icons: ^1.0.8
-
-  # OpenStreetMap (FREE, no billing)
   flutter_map: ^7.0.0
-
-  # Location (for user position later)
   location: ^5.0.3
-  flutter_launcher_icons: ^0.14.4
+  local_auth: ^2.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
 
-  # Assets (already created by you)
   assets:
     - assets/images/
     - assets/icons/
-flutter_icons:
+
+# 👇 THIS IS THE IMPORTANT PART
+flutter_launcher_icons:
   android: true
-  ios: true
-  image_path: assets/icons/app_icon.jpeg
+  ios: false   # you can keep false since you're building APK
+  image_path: "assets/icons/app_icon.jpeg"
+  min_sdk_android: 21

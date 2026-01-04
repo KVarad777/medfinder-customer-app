@@ -3,7 +3,6 @@ import '../../../core/services/api_service.dart';
 
 class ScanResultScreen extends StatefulWidget {
   final String qrData;
-
   const ScanResultScreen({super.key, required this.qrData});
 
   @override
@@ -12,131 +11,109 @@ class ScanResultScreen extends StatefulWidget {
 
 class _ScanResultScreenState extends State<ScanResultScreen> {
   bool loading = true;
-  String status = "";
-  Map<String, dynamic>? medicine;
+  Map<String, dynamic>? data;
 
   @override
   void initState() {
     super.initState();
-    _verifyQr();
+    _verify();
   }
 
-  Future<void> _verifyQr() async {
-    try {
-      final res = await ApiService.verifyQr(widget.qrData);
-      setState(() {
-        status = res["status"];
-        medicine = res["medicine"];
-        loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        status = "ERROR";
-        loading = false;
-      });
+  Future<void> _verify() async {
+    final res = await ApiService.verifyQr(widget.qrData);
+    setState(() {
+      data = res;
+      loading = false;
+    });
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case "GENUINE":
+        return Colors.green;
+      case "ALREADY_SOLD":
+        return Colors.orange;
+      case "ILLEGAL":
+        return Colors.red;
+      case "FAKE":
+        return Colors.black;
+      default:
+        return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Verification Result")),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _statusCard(),
-                  const SizedBox(height: 20),
-
-                  if (status == "GENUINE") ...[
-                    _detail("Medicine", medicine?["medicine_name"]),
-                    _detail("Brand", medicine?["brand_name"]),
-                    _detail("Batch", medicine?["batch_number"]),
-                    _detail(
-                        "Expiry",
-                        medicine?["expiry_date"]
-                            ?.toString()
-                            .split("T")[0]),
-                  ],
-
-                  if (status == "ALREADY_SOLD") ...[
-                    _detail("Shop", medicine?["medical_shop_name"]),
-                    _detail(
-                        "Sold At",
-                        medicine?["selling_date_time"]
-                            ?.toString()
-                            .replaceAll("T", " ")),
-                  ],
-
-                  if (status == "INVALID") ...[
-                    const Text(
-                      "This QR code is not registered in the system.",
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ],
-
-                  const Spacer(),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text("Scan Another"),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
-
-  Widget _statusCard() {
-    Color color;
-    IconData icon;
-    String text;
-
-    switch (status) {
-      case "GENUINE":
-        color = Colors.green;
-        icon = Icons.verified;
-        text = "Genuine Medicine";
-        break;
-      case "ALREADY_SOLD":
-        color = Colors.orange;
-        icon = Icons.warning;
-        text = "Already Sold";
-        break;
-      default:
-        color = Colors.red;
-        icon = Icons.error;
-        text = "Invalid Medicine";
+    if (loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return Card(
-      color: color.withOpacity(0.1),
-      child: ListTile(
-        leading: Icon(icon, color: color, size: 40),
-        title: Text(
-          text,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: color,
-            fontSize: 18,
-          ),
+    final status = data?["status"] ?? "UNKNOWN";
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("Verification Result")),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ListView(
+          children: [
+            Card(
+              color: _statusColor(status).withOpacity(0.1),
+              child: ListTile(
+                leading: Icon(Icons.verified, color: _statusColor(status)),
+                title: Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: _statusColor(status),
+                  ),
+                ),
+                subtitle: Text(data?["message"] ?? ""),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _row("Medicine", data?["medicine_name"]),
+            _row("Brand", data?["brand_name"]),
+            _row("Batch", data?["batch_number"]),
+            _row(
+              "Expiry",
+              data?["expiry_date"] != null
+                  ? data!["expiry_date"].toString().substring(0, 10)
+                  : null,
+            ),
+            _row("Days to Expiry", data?["days_to_expiry"]?.toString()),
+
+            if (status == "ALREADY_SOLD" || status == "ILLEGAL") ...[
+              const Divider(),
+              _row("Sold At", data?["sold_at"]?.toString()),
+              _row("Customer", data?["sold_to"]),
+              _row("Shop", data?["shop_name"]),
+              _row("Address", data?["shop_address"]),
+            ],
+
+            const SizedBox(height: 20),
+
+            ElevatedButton.icon(
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text("Generate PDF Report"),
+              onPressed: () {
+                // next step
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _detail(String title, String? value) {
+  Widget _row(String label, String? value) {
+    if (value == null) return const SizedBox();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Text(
-        "$title: ${value ?? '-'}",
-        style: const TextStyle(fontSize: 16),
-      ),
+      child: Text("$label: $value"),
     );
   }
 }

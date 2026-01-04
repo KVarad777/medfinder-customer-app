@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  // 🔴 CHANGE ONLY THIS VALUE WHEN NEEDED
-  static const String baseUrl = "http://192.168.1.2:3000";
+  static const String baseUrl =
+      "https://medfinder-backend-0v6g.onrender.com";
 
   static const Map<String, String> headers = {
     "Content-Type": "application/json",
@@ -16,7 +16,6 @@ class ApiService {
       headers: headers,
       body: jsonEncode({"mobileNumber": mobile}),
     );
-
     return jsonDecode(response.body);
   }
 
@@ -31,7 +30,6 @@ class ApiService {
         "name": name,
       }),
     );
-
     return jsonDecode(response.body);
   }
 
@@ -42,11 +40,10 @@ class ApiService {
       headers: headers,
       body: jsonEncode({"textCode": textCode}),
     );
-
     return jsonDecode(response.body);
   }
 
-  // ---------------- GET VERIFIED SHOPS ----------------
+  // ---------------- VERIFIED SHOPS (OPTIONAL) ----------------
   static Future<List<dynamic>> getVerifiedShops() async {
     final response = await http.get(
       Uri.parse("$baseUrl/api/shops/verified"),
@@ -55,8 +52,78 @@ class ApiService {
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
-    } else {
-      return [];
     }
+    return [];
+  }
+
+  // ---------------- ALL SHOPS (MAP) ✅ FIXED ----------------
+  static Future<List<dynamic>> getAllShops() async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/shops/all"),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return [];
+  }
+
+  // ---------------- AUTOCOMPLETE SEARCH ----------------
+  static Future<List<dynamic>> searchMedicines(String query) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/medicines/search?q=$query"),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return [];
+  }
+
+  // ---------------- SHOPS HAVING MEDICINE ----------------
+  static Future<List<dynamic>> getMedicineShops(String medicineName) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/medicines/$medicineName/shops"),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return [];
+  }
+
+  // ---------------- SHOP STOCK ----------------
+  static Future<List<dynamic>> getShopStock(String shopId) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/medicines/shop/$shopId"),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return [];
+  }
+
+  // ---------------- RESERVE MEDICINE (OPTIONAL) ----------------
+  static Future<bool> reserveMedicine(
+    String medicineName,
+    String customerName,
+  ) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/medicines/reserve"),
+      headers: headers,
+      body: jsonEncode({
+        "medicine_name": medicineName,
+        "customer_name": customerName,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data["success"] == true;
+    }
+    return false;
   }
 }
